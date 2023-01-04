@@ -21,11 +21,10 @@ public class SynchronizerController {
     public ResponseEntity<?> saveAgentDetails(@RequestBody RequestModel requestModel){
         return synchronizerService.saveAgentDetailsToSyncTable(requestModel);
     }
-/*
-    @Scheduled(fixedDelayString = "PT20S")
+
+    @Scheduled(fixedDelayString = "PT23H")
     public void updateAgentPhone(){
         synchronizerService.updatePreviousRecords();
     }
 
- */
 }

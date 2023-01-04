@@ -1,6 +1,9 @@
 package synchronizerservice.synchronizerservice.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -10,6 +13,7 @@ import synchronizerservice.synchronizerservice.entity.Tms_Agent;
 import synchronizerservice.synchronizerservice.model.RequestModel;
 import synchronizerservice.synchronizerservice.repository.*;
 
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -48,9 +52,10 @@ public class SynchronizerService {
             return ResponseEntity.ok("Agent details updated successfully");
         }
         return ResponseEntity.status(200).body("agent details already exist in pmSync service");
+
     }
 
-    /*
+
     public void updatePreviousRecords(){
         List<Tms_Agent> agentsFromTms = tmsAgentRepository.findAll();
         M_Mobile_Sync pmSync = new M_Mobile_Sync();
@@ -58,27 +63,23 @@ public class SynchronizerService {
             System.out.println("No agents found");
             return;
         };
+
         for (Tms_Agent agent : agentsFromTms){
-            if(agent.getApproval()){
-                M_Mobile_Sync pmSyncAgent = syncRepo.findByPmNum(agent.getPmNumber());
-                if(pmSyncAgent == null){
-                    System.out.println(agent.getAgentCode() + " is updating records");
-                 M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(agent.getPmNumber());
-                 pmSync.setCardNum(agentFromPm.getCardNum());
-                 pmSync.setTmsAgentId(agent.getId());
-                 pmSync.setPmNum(agentFromPm.getPhoneNo());
-                 pmSync.setPmAgentId(agentFromPm.getAgentId());
-                 syncRepo.saveAndFlush(pmSync);
-                 if(agent.getAgentCode() != agentFromPm.getAgentId()){
-                     agent.setAgentCode(agentFromPm.getAgentId());
-                     tmsAgentRepository.saveAndFlush(agent);
-                     System.out.println(agentFromPm.getAgentName() + " records has being updated");
-                 }
-                }
+            if(agent.getApproval() == true){
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.setBasicAuth("user", "pass");
+                String url = "http://localhost:8080/api/pmsync";
+                HashMap<String, Object> requestJson = new HashMap<>();
+                requestJson.put("pmNumber", agent.getPmNumber());
+                requestJson.put("tmsAgentId", agent.getId());
+                HttpEntity<HashMap> entity = new HttpEntity<HashMap>(requestJson, headers);
+                String response = restTemplate.postForObject(url, entity, String.class);
+                System.out.println(response);
             }
         }
 
     }
 
-     */
+
 }
