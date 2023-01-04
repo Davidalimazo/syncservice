@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RequestModel {
     private String pmNumber;
+    private Long tmsAgentId;
 }

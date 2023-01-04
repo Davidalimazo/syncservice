@@ -10,21 +10,22 @@ import synchronizerservice.synchronizerservice.service.SynchronizerService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/synchronizer")
+@RequestMapping("/api/pmsync")
 public class SynchronizerController {
     private final SynchronizerService synchronizerService;
 
     public SynchronizerController(SynchronizerService synchronizerService) {
         this.synchronizerService = synchronizerService;
     }
-    @GetMapping
-    public List getAllAgents(){
-        return synchronizerService.getAllAgents();
+    @PostMapping
+    public ResponseEntity<?> saveAgentDetails(@RequestBody RequestModel requestModel){
+        return synchronizerService.saveAgentDetailsToSyncTable(requestModel);
     }
-
+/*
     @Scheduled(fixedDelayString = "PT20S")
-    public ResponseEntity<?> saveAgentDetails(){
-        return synchronizerService.saveAgentDetails();
+    public void updateAgentPhone(){
+        synchronizerService.updatePreviousRecords();
     }
 
+ */
 }
