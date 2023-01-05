@@ -6,6 +6,7 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import synchronizerservice.synchronizerservice.service.AuditorAwareImp;
 
+
 @Configuration
 @EnableJpaAuditing
 public class AuditConfig {

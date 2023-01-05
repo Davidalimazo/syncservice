@@ -22,12 +22,12 @@ public class SynchronizerController {
         this.synchronizerService = synchronizerService;
     }
 
-    @Scheduled(fixedDelayString = "PT5H")
-    public void writeRecordsIntoPmSync(){
-            synchronizerService.prepersistRecordsInDB();
+    @Scheduled(fixedDelayString = "PT5S")
+    public void writeRecordsIntoPmSync() {
+        synchronizerService.prepersistRecordsInDB();
     }
-    @Scheduled(fixedDelayString = "PT10S")
-    public void saveAgentDetailsToSyncTableController(){
-            synchronizerService.saveAgentDetailsToSyncTable();
+    @Scheduled(fixedDelayString = "PT6S")
+    public void upDateTmsAgentRecords() {
+        synchronizerService.saveAgentDetailsToSyncTable();
     }
 }
