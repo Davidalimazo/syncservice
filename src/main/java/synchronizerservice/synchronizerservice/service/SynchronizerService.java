@@ -33,53 +33,47 @@ public class SynchronizerService {
     }
 
 
-    public ResponseEntity<?> saveAgentDetailsToSyncTable(RequestModel requestModel){;
-        M_mobile_agent agent = m_mobile_agent_repository.findByPhoneNo(requestModel.getPmNumber());
-        M_Mobile_Sync doesRecordExist = syncRepo.findByPmNum(requestModel.getPmNumber());
+    public ResponseEntity<?> saveAgentDetailsToSyncTable(){
 
-        if(agent != null && doesRecordExist == null){
-            M_Mobile_Sync pmSych = new M_Mobile_Sync();
-            pmSych.setCardNum(agent.getCardNum());
-            pmSych.setPmAgentId(agent.getAgentId());
-            pmSych.setTmsAgentId(requestModel.getTmsAgentId());
-            pmSych.setPmNum(agent.getPhoneNo());
-            syncRepo.save(pmSych);
-            Tms_Agent agentCode = tmsAgentRepository.findByPmNumber(agent.getPhoneNo());
-            if(agentCode.getAgentCode() != agent.getAgentId()){
-                agentCode.setAgentCode(agent.getAgentId());
-                tmsAgentRepository.saveAndFlush(agentCode);
+        List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAll();
+        if(agentFromPmSync.size() < 1) return ResponseEntity.status(400).body("No records found");
+        for (M_Mobile_Sync pmSynAgentDetails : agentFromPmSync){
+            if(pmSynAgentDetails.getPmAgentId() == null && pmSynAgentDetails.getCardNum() == null){
+                M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(pmSynAgentDetails.getPmNum());
+                if (agentFromPm != null){
+                    pmSynAgentDetails.setPmAgentId(agentFromPm.getAgentId());
+                    pmSynAgentDetails.setCardNum(agentFromPm.getCardNum());
+                    syncRepo.saveAndFlush(pmSynAgentDetails);
+                    List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(agentFromPm.getPhoneNo());
+                    if(agentFromTms.size() > 0){
+                        for (Tms_Agent tms : agentFromTms){
+                            if(tms.getAgentCode() != agentFromPm.getAgentId()){
+                                tms.setAgentCode(agentFromPm.getAgentId());
+                                tmsAgentRepository.saveAndFlush(tms);
+                            }
+                        }
+
+                    }
+                }
             }
-            return ResponseEntity.ok("Agent details updated successfully");
         }
-        return ResponseEntity.status(200).body("agent details already exist in pmSync service");
-
+        return ResponseEntity.status(200).body("Records updated successfully");
     }
 
+    public ResponseEntity<?> prepersistRecordsInDB(){
 
-    public void updatePreviousRecords(){
-        List<Tms_Agent> agentsFromTms = tmsAgentRepository.findAll();
+        List <Tms_Agent> getAllAgentsFromTms = tmsAgentRepository.findAll();
+        if(getAllAgentsFromTms.size() < 1) return null;
         M_Mobile_Sync pmSync = new M_Mobile_Sync();
-        if (agentsFromTms.size() < 1) {
-            System.out.println("No agents found");
-            return;
-        };
-
-        for (Tms_Agent agent : agentsFromTms){
-            if(agent.getApproval() == true){
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.setBasicAuth("user", "pass");
-                String url = "http://localhost:8080/api/pmsync";
-                HashMap<String, Object> requestJson = new HashMap<>();
-                requestJson.put("pmNumber", agent.getPmNumber());
-                requestJson.put("tmsAgentId", agent.getId());
-                HttpEntity<HashMap> entity = new HttpEntity<HashMap>(requestJson, headers);
-                String response = restTemplate.postForObject(url, entity, String.class);
-                System.out.println(response);
+        for (Tms_Agent db : getAllAgentsFromTms){
+                M_Mobile_Sync agentFromSync = syncRepo.findByPmNum(db.getPmNumber());
+                if(agentFromSync == null){
+                    pmSync.setPmNum(db.getPmNumber());
+                    pmSync.setTmsAgentId(db.getId());
+                syncRepo.save(pmSync);
             }
         }
-
+        return ResponseEntity.ok("ok");
     }
-
 
 }

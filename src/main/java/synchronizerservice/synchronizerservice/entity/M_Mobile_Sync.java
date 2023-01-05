@@ -19,7 +19,8 @@ import java.util.Date;
 @NoArgsConstructor
 public class M_Mobile_Sync extends Auditable{
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @SequenceGenerator(name = "M_MOBILE_SYNC_SEQUENCE", sequenceName = "M_MOBILE_SYNC_SEQUENCE", initialValue = 1)
+    @GeneratedValue( strategy = GenerationType.IDENTITY, generator = "M_MOBILE_SYNC_SEQUENCE")
     @Column(name = "id")
     private Long id;
     @Column(name = "tms_agent_id")

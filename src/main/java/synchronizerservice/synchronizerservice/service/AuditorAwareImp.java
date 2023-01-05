@@ -8,6 +8,6 @@ import java.util.Optional;
 public class AuditorAwareImp implements AuditorAware<String> {
     @Override
     public Optional<String> getCurrentAuditor() {
-        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication().getName());
+        return Optional.of("system");
     }
 }

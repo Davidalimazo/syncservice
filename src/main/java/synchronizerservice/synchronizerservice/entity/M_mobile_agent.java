@@ -31,5 +31,4 @@ public class M_mobile_agent {
     private String email;
     @Column(name = "AGGREGATOR_ID")
     private String aggregatorId;
-
 }

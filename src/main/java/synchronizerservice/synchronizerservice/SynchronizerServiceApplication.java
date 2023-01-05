@@ -28,4 +28,3 @@ public class SynchronizerServiceApplication {
 @ConditionalOnProperty(name = "scheduling.enabled", matchIfMissing = true)
 class SchedulingConfiguration{};
 
-
