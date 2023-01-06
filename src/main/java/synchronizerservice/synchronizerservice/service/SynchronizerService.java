@@ -10,8 +10,10 @@ import synchronizerservice.synchronizerservice.entity.M_mobile_agent;
 import synchronizerservice.synchronizerservice.entity.Tms_Agent;
 import synchronizerservice.synchronizerservice.repository.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+
 
 @Service
 public class SynchronizerService {
@@ -31,7 +33,7 @@ public class SynchronizerService {
         this.tmsAgentRepository = tmsAgentRepository;
     }
 
-
+/*
     public ResponseEntity<?> saveAgentDetailsToSyncTable(){
 
         List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAll();
@@ -43,6 +45,7 @@ public class SynchronizerService {
                 M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(pmSynAgentDetails.getPmNum());
 
                 if (agentFromPm != null){
+                    M_Mobile_Sync doesRecordExist = syncRepo.findByTmsAgentId(agentFromPm.getId());
                     pmSynAgentDetails.setPmAgentId(agentFromPm.getAgentId());
                     pmSynAgentDetails.setCardNum(agentFromPm.getCardNum());
                     syncRepo.saveAndFlush(pmSynAgentDetails);
@@ -59,7 +62,46 @@ public class SynchronizerService {
         }
         return ResponseEntity.status(200).body("Records updated successfully");
     }
-
+*/
+public ResponseEntity<?> saveAgentDetailsToSyncTable(){
+//TODO: get all agent from pmSync
+    List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAll();
+    //TODO: create a list for new agents without pmAgentId and cardNumber
+    List<M_Mobile_Sync> newAgents =  new ArrayList<>();
+    if(agentFromPmSync.size() < 1) return ResponseEntity.status(400).body("No records found");
+    for (M_Mobile_Sync pmSynAgentDetails : agentFromPmSync){
+//TODO: iterate through the pmSync and store the new agents in the list of agents without pmAgentId and cardNumber
+        if(pmSynAgentDetails.getPmAgentId() == null && pmSynAgentDetails.getCardNum() == null){
+           newAgents.add(pmSynAgentDetails);
+        }
+    }
+    if (newAgents.size() > 0){
+        for (M_Mobile_Sync isEligibleForUpdate:newAgents){
+            //TODO: check if the agents have records in the pmSync table with their tmsId
+            M_Mobile_Sync sync = syncRepo.findByTmsAgentId(isEligibleForUpdate.getTmsAgentId());
+            if(sync == null){
+                //TODO: if no record is found then fetch agent cardNumber and pmAgentId from pmTable
+                M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(sync.getPmNum());
+                M_Mobile_Sync saveToPmSync = new M_Mobile_Sync();
+                saveToPmSync.setPmAgentId(agentFromPm.getAgentId());
+                saveToPmSync.setCardNum(agentFromPm.getCardNum());
+                //TODO: save agent cardNumber and pmAgentId in the pmSync table
+                syncRepo.saveAndFlush(saveToPmSync);
+                //TODO: fetch agent tms details from the agent dable
+                List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(agentFromPm.getPhoneNo());
+                //TODO: check if the agentCode on tms  is the same as the one on pm
+                for (Tms_Agent tms : agentFromTms){
+                    //TODO: if different update the agentCode on tms
+                    if(tms.getAgentCode() != agentFromPm.getAgentId()){
+                        tms.setAgentCode(agentFromPm.getAgentId());
+                        tmsAgentRepository.saveAndFlush(tms);
+                    }
+                }
+            }
+        }
+    }
+    return ResponseEntity.status(200).body("Records updated successfully");
+}
 
     public ResponseEntity<?> prepersistRecordsInDB(){
 
