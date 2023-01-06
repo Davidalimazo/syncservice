@@ -1,6 +1,8 @@
 package synchronizerservice.synchronizerservice.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -10,17 +12,29 @@ import synchronizerservice.synchronizerservice.entity.M_mobile_agent;
 import synchronizerservice.synchronizerservice.entity.Tms_Agent;
 import synchronizerservice.synchronizerservice.repository.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
+@Slf4j
 @Service
+
 public class SynchronizerService {
     private final SyncRepo syncRepo;
     private final Agent_Account_Repository agentAccountRepository;
     private final M_mobile_agent_repository m_mobile_agent_repository;
     private final Tms_Agent_Repository tmsAgentRepository;
+    @Value("${secretKy}")
+    private String value;
+    @Value("${initializationVector}")
+    private String initializationVector;
 
     @Autowired
     RestTemplate restTemplate;
@@ -33,95 +47,57 @@ public class SynchronizerService {
         this.tmsAgentRepository = tmsAgentRepository;
     }
 
-/*
-    public ResponseEntity<?> saveAgentDetailsToSyncTable(){
 
-        List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAll();
+public ResponseEntity<?> saveAgentDetailsToSyncTable() {
 
-        if(agentFromPmSync.size() < 1) return ResponseEntity.status(400).body("No records found");
-        for (M_Mobile_Sync pmSynAgentDetails : agentFromPmSync){
+//TODO: get all agent from pmSync without pmAgentId and cardNumber
+    List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAgentWithoutPmNumAndCardNum();
 
-            if(pmSynAgentDetails.getPmAgentId() == null && pmSynAgentDetails.getCardNum() == null){
-                M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(pmSynAgentDetails.getPmNum());
-
-                if (agentFromPm != null){
-                    M_Mobile_Sync doesRecordExist = syncRepo.findByTmsAgentId(agentFromPm.getId());
-                    pmSynAgentDetails.setPmAgentId(agentFromPm.getAgentId());
-                    pmSynAgentDetails.setCardNum(agentFromPm.getCardNum());
-                    syncRepo.saveAndFlush(pmSynAgentDetails);
-                    List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(agentFromPm.getPhoneNo());
-
-                        for (Tms_Agent tms : agentFromTms){
-                            if(tms.getAgentCode() != agentFromPm.getAgentId()){
-                                tms.setAgentCode(agentFromPm.getAgentId());
-                                tmsAgentRepository.saveAndFlush(tms);
-                            }
-                        }
-                }
-            }
-        }
-        return ResponseEntity.status(200).body("Records updated successfully");
-    }
-*/
-public ResponseEntity<?> saveAgentDetailsToSyncTable(){
-//TODO: get all agent from pmSync
-    List<M_Mobile_Sync> agentFromPmSync = syncRepo.findAll();
-    //TODO: create a list for new agents without pmAgentId and cardNumber
-    List<M_Mobile_Sync> newAgents =  new ArrayList<>();
-    if(agentFromPmSync.size() < 1) return ResponseEntity.status(400).body("No records found");
-    for (M_Mobile_Sync pmSynAgentDetails : agentFromPmSync){
-//TODO: iterate through the pmSync and store the new agents in the list of agents without pmAgentId and cardNumber
-        if(pmSynAgentDetails.getPmAgentId() == null && pmSynAgentDetails.getCardNum() == null){
-           newAgents.add(pmSynAgentDetails);
-        }
-    }
-    if (newAgents.size() > 0){
-        for (M_Mobile_Sync isEligibleForUpdate:newAgents){
-            //TODO: check if the agents have records in the pmSync table with their tmsId
-            M_Mobile_Sync sync = syncRepo.findByTmsAgentId(isEligibleForUpdate.getTmsAgentId());
-            if(sync == null){
-                //TODO: if no record is found then fetch agent cardNumber and pmAgentId from pmTable
-                M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(sync.getPmNum());
-                M_Mobile_Sync saveToPmSync = new M_Mobile_Sync();
-                saveToPmSync.setPmAgentId(agentFromPm.getAgentId());
-                saveToPmSync.setCardNum(agentFromPm.getCardNum());
-                //TODO: save agent cardNumber and pmAgentId in the pmSync table
-                syncRepo.saveAndFlush(saveToPmSync);
-                //TODO: fetch agent tms details from the agent dable
-                List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(agentFromPm.getPhoneNo());
+    if (agentFromPmSync.size() > 0){
+        for (M_Mobile_Sync isEligibleForUpdate:agentFromPmSync){
+                //TODO: fetch agent cardNumber and pmAgentId from pmTable with pmSync pmNumber
+                M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(isEligibleForUpdate.getPmNum());
+                if(agentFromPm != null){
+                isEligibleForUpdate.setPmAgentId(agentFromPm.getAgentId());
+                isEligibleForUpdate.setCardNum(agentFromPm.getCardNum());
+                //TODO: update agent cardNumber and pmAgentId in the pmSync table
+                syncRepo.saveAndFlush(isEligibleForUpdate);
+                log.info( agentFromPm.getAgentName()+ " records has being updated on pmSync table");
+                //TODO: fetch agent tms details from the agent table
+                List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(isEligibleForUpdate.getPmNum());
                 //TODO: check if the agentCode on tms  is the same as the one on pm
                 for (Tms_Agent tms : agentFromTms){
                     //TODO: if different update the agentCode on tms
                     if(tms.getAgentCode() != agentFromPm.getAgentId()){
                         tms.setAgentCode(agentFromPm.getAgentId());
                         tmsAgentRepository.saveAndFlush(tms);
+                        log.info( agentFromPm.getAgentName()+ " agent code has being updated on tms agent table");
                     }
                 }
-            }
+                }
         }
     }
     return ResponseEntity.status(200).body("Records updated successfully");
 }
 
+        /*
     public ResponseEntity<?> prepersistRecordsInDB(){
 
-        List <Tms_Agent> getAllAgentsFromTms = tmsAgentRepository.findAll();
-        if(getAllAgentsFromTms.size() < 1) return null;
+      List<Tms_Agent> tms_agentList = tmsAgentRepository.findAll();
 
-        for (Tms_Agent tmsAgent : getAllAgentsFromTms){
-            List<Agent_Account> getAgentAccount = agentAccountRepository.findAllById(tmsAgent.getId());
-            if (getAgentAccount.size() < 1) return null;
-            for (Agent_Account agent : getAgentAccount){
-                M_Mobile_Sync pmSync = new M_Mobile_Sync();
-                M_Mobile_Sync sync = syncRepo.findByTmsAgentId(agent.getId());
-                if(sync != null) continue;
-                pmSync.setTmsAgentId(agent.getId());
-                pmSync.setPmNum(agent.getAccountNumber());
-                syncRepo.save(pmSync);
-            }
-
-        }
+      for (Tms_Agent tms:tms_agentList){
+         List<Agent_Account> ag = agentAccountRepository.findByAgentId(tms.getId());
+         if(ag != null){
+             ag.stream().forEach(i->{
+                 M_Mobile_Sync pmSync = new M_Mobile_Sync();
+                 pmSync.setTmsAgentId(tms.getId());
+                 pmSync.setPmNum(i.getAccountNumber());
+                 syncRepo.save(pmSync);
+                 System.out.println(i.getAccountName()+" added");
+             });
+         }
+      }
         return ResponseEntity.ok("ok");
     }
-
+         */
 }

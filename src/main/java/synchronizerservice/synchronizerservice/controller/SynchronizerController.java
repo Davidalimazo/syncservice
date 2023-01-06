@@ -1,14 +1,13 @@
 package synchronizerservice.synchronizerservice.controller;
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import synchronizerservice.synchronizerservice.entity.M_Mobile_Sync;
-import synchronizerservice.synchronizerservice.model.RequestModel;
 import synchronizerservice.synchronizerservice.service.SynchronizerService;
 
 import java.util.List;
@@ -21,13 +20,15 @@ public class SynchronizerController {
     public SynchronizerController(SynchronizerService synchronizerService) {
         this.synchronizerService = synchronizerService;
     }
-
-    @Scheduled(fixedDelayString = "PT5S")
+/*
+ @EventListener(ApplicationReadyEvent.class)
     public void writeRecordsIntoPmSync() {
         synchronizerService.prepersistRecordsInDB();
     }
-    @Scheduled(fixedDelayString = "PT6S")
+    */
+    @Scheduled(fixedDelayString = "PT10S")
     public void upDateTmsAgentRecords() {
         synchronizerService.saveAgentDetailsToSyncTable();
     }
+
 }

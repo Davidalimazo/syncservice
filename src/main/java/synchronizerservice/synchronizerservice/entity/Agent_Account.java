@@ -23,5 +23,5 @@ public class Agent_Account {
     @Column(name = "authorized")
     private Boolean authorized;
     @Column(name = "agent_id")
-    private String agentId;
+    private Long agentId;
 }
