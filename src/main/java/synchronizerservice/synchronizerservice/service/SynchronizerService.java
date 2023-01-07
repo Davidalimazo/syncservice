@@ -64,23 +64,21 @@ public ResponseEntity<?> saveAgentDetailsToSyncTable() {
                 syncRepo.saveAndFlush(isEligibleForUpdate);
                 log.info( agentFromPm.getAgentName()+ " records has being updated on pmSync table");
                 //TODO: fetch agent tms details from the agent table
-                List<Tms_Agent> agentFromTms = tmsAgentRepository.findByPmNumber(isEligibleForUpdate.getPmNum());
+                    Tms_Agent tms = tmsAgentRepository.findByAgentId(isEligibleForUpdate.getTmsAgentId());
                 //TODO: check if the agentCode on tms  is the same as the one on pm
-                for (Tms_Agent tms : agentFromTms){
-                    //TODO: if different update the agentCode on tms
                     if(tms.getAgentCode() != agentFromPm.getAgentId()){
+                        //TODO: if different update the agentCode on tms
                         tms.setAgentCode(agentFromPm.getAgentId());
                         tmsAgentRepository.saveAndFlush(tms);
                         log.info( agentFromPm.getAgentName()+ " agent code has being updated on tms agent table");
                     }
-                }
                 }
         }
     }
     return ResponseEntity.status(200).body("Records updated successfully");
 }
 
-        /*
+/*
     public ResponseEntity<?> prepersistRecordsInDB(){
 
       List<Tms_Agent> tms_agentList = tmsAgentRepository.findAll();
@@ -99,5 +97,5 @@ public ResponseEntity<?> saveAgentDetailsToSyncTable() {
       }
         return ResponseEntity.ok("ok");
     }
-         */
+ */
 }

@@ -25,10 +25,10 @@ public class SynchronizerController {
     public void writeRecordsIntoPmSync() {
         synchronizerService.prepersistRecordsInDB();
     }
-    */
+ */
+
     @Scheduled(fixedDelayString = "PT10S")
     public void upDateTmsAgentRecords() {
         synchronizerService.saveAgentDetailsToSyncTable();
     }
-
 }

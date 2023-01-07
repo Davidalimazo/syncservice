@@ -15,7 +15,8 @@ public interface Tms_Agent_Repository extends JpaRepository<Tms_Agent, Long> {
 
     public List<Tms_Agent> findByPmNumber(String pmNumber);
 
-    List<Tms_Agent> findAllById(Long i);
+    @Query(value = "SELECT * FROM Agent WHERE id=?1", nativeQuery = true)
+    Tms_Agent findByAgentId(Long i);
     @Query(value = "SELECT * FROM Agent WHERE agent_type IS NULL AND email IS NULL", nativeQuery = true)
     public List<Tms_Agent> findNullValues();
 }
