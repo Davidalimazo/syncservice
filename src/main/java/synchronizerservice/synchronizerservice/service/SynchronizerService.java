@@ -47,7 +47,6 @@ public class SynchronizerService {
         this.tmsAgentRepository = tmsAgentRepository;
     }
 
-
 public ResponseEntity<?> saveAgentDetailsToSyncTable() {
 
 //TODO: get all agent from pmSync without pmAgentId and cardNumber
@@ -59,41 +58,31 @@ public ResponseEntity<?> saveAgentDetailsToSyncTable() {
             List<M_Mobile_Sync> tmsAgentAlreadyUpdated = syncRepo.findTmsAgentsWhoseIdAndCardNumAreNotNull(isEligibleForUpdate.getTmsAgentId());
             //TODO: fetch agent cardNumber and pmAgentId from pmTable with pmSync pmNumber
             M_mobile_agent agentFromPm = m_mobile_agent_repository.findByPhoneNo(isEligibleForUpdate.getPmNum());
-            if(tmsAgentAlreadyUpdated.size() > 0){
-                if(agentFromPm != null){
-                    isEligibleForUpdate.setPmAgentId(agentFromPm.getAgentId());
-                    isEligibleForUpdate.setCardNum(agentFromPm.getCardNum());
-                    //TODO: update agent cardNumber and pmAgentId in the pmSync table
-                    syncRepo.saveAndFlush(isEligibleForUpdate);
-                    log.info( agentFromPm.getAgentName()+ " records has being updated on pmSync table");
+            if(agentFromPm != null){
+                isEligibleForUpdate.setPmAgentId(agentFromPm.getAgentId());
+                isEligibleForUpdate.setCardNum(agentFromPm.getCardNum());
+                //TODO: update agent cardNumber and pmAgentId in the pmSync table
+                syncRepo.saveAndFlush(isEligibleForUpdate);
+                log.info( agentFromPm.getAgentName()+ " records has being updated on pmSync table");
+                if(tmsAgentAlreadyUpdated.size() == 0){
+                        //TODO: fetch agent tms details from the agent table
+                        Tms_Agent tms = tmsAgentRepository.findByAgentId(isEligibleForUpdate.getTmsAgentId());
+                        //TODO: check if the agentCode on tms  is the same as the one on pm
+                        if(tms.getAgentCode() != agentFromPm.getAgentId()){
+                            //TODO: if different update the agentCode on tms
+                            tms.setAgentCode(agentFromPm.getAgentId());
+                            tmsAgentRepository.saveAndFlush(tms);
+                            log.info( agentFromPm.getAgentName()+ " agent code has being updated on tms agent table");
+                        }
                 }
-            }else {
-                if(agentFromPm != null){
-                    isEligibleForUpdate.setPmAgentId(agentFromPm.getAgentId());
-                    isEligibleForUpdate.setCardNum(agentFromPm.getCardNum());
-                    //TODO: update agent cardNumber and pmAgentId in the pmSync table
-                    syncRepo.saveAndFlush(isEligibleForUpdate);
-                    log.info( agentFromPm.getAgentName()+ " records has being updated on pmSync table");
-                    //TODO: fetch agent tms details from the agent table
-                    Tms_Agent tms = tmsAgentRepository.findByAgentId(isEligibleForUpdate.getTmsAgentId());
-                    //TODO: check if the agentCode on tms  is the same as the one on pm
-                    if(tms.getAgentCode() != agentFromPm.getAgentId()){
-                        //TODO: if different update the agentCode on tms
-                        tms.setAgentCode(agentFromPm.getAgentId());
-                        tmsAgentRepository.saveAndFlush(tms);
-                        log.info( agentFromPm.getAgentName()+ " agent code has being updated on tms agent table");
-                    }
-                }
-
             }
-
 
         }
     }
     return ResponseEntity.status(200).body("Records updated successfully");
 }
 
-/*
+ /*
     public ResponseEntity<?> prepersistRecordsInDB(){
 
       List<Tms_Agent> tms_agentList = tmsAgentRepository.findAll();
